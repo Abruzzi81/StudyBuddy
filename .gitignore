@@ -1,0 +1,37 @@
+# Zależności (najważniejsze - nigdy nie wrzucamy na Gita)
+node_modules/
+
+# Zmienne środowiskowe (hasła, klucze API, konfiguracja bazy danych)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logi błędów i debugowania
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Pliki budowania / kompilacji (jeśli używasz TypeScripta lub bundlerów)
+dist/
+build/
+
+# Testy i pokrycie kodu
+coverage/
+
+# Pliki systemowe (Windows / macOS)
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Pliki edytorów kodu (VS Code, WebStorm itp.)
+.vscode/
+
+# Pliki tymczasowe i cache
+.cache/
+tmp/
+temp/
