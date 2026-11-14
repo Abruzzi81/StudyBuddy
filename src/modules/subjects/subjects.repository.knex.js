@@ -1,7 +1,7 @@
 function createKnexUnitOfWork(db) {
     function createSubjectsRepository(trx) {
         return {
-            async list({ limit = 20, sortBy = 'createdAt', order = 'desc' } = {}) {
+            async list({ limit = 20, sortBy = 'id', order = 'asc' } = {}) {
                 return await trx('subjects')
                     .select('*')
                     .orderBy(sortBy, order)

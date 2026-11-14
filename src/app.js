@@ -13,8 +13,13 @@ const { createSubjectsService } = require("./modules/subjects/subjects.service")
 const { createSubjectsController } = require("./modules/subjects/subjects.controller");
 const { createSubjectsRouter } = require("./modules/subjects/subjects.routes");
 
-// Przyjmujemy obiekt z dwoma różnymi funkcjami transakcyjnymi
-function createApp({ tasksRunInTransaction, subjectsRunInTransaction }) {
+// Moduł Grades
+const { createGradesService } = require("./modules/grades/grades.service");
+const { createGradesController } = require("./modules/grades/grades.controller");
+const { createGradesRouter } = require("./modules/grades/grades.routes");
+
+// 1. Odbieramy wszystkie trzy funkcje transakcyjne w argumentach
+function createApp({ tasksRunInTransaction, subjectsRunInTransaction, gradesRunInTransaction }) {
     const app = express();
 
     app.use(requestLogger);
@@ -27,6 +32,10 @@ function createApp({ tasksRunInTransaction, subjectsRunInTransaction }) {
     // Inicjalizacja modułu Subjects
     const subjectsService = createSubjectsService({ runInTransaction: subjectsRunInTransaction });
     app.use("/api/subjects", createSubjectsRouter(createSubjectsController(subjectsService)));
+
+    // Inicjalizacja modułu Grades
+    const gradesService = createGradesService({ runInTransaction: gradesRunInTransaction });
+    app.use("/api/grades", createGradesRouter(createGradesController(gradesService)));
 
     // Obsługa błędów i nieznanych tras
     app.use(notFound);
