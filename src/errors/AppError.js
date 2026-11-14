@@ -26,4 +26,18 @@ class ConflictError extends AppError {
     }
 }
 
-module.exports = { AppError, ValidationError, NotFoundError, ConflictError }
+class UnauthorizedError extends AppError {
+    constructor(message = "Authentication required") {
+        super(message, 401,
+            "UNAUTHORIZED");
+    }
+}
+
+class ForbiddenError extends AppError {
+    constructor(message = "Insufficient permissions") {
+        super(message, 403,
+            "FORBIDDEN");
+    }
+}
+
+module.exports = { AppError, ValidationError, NotFoundError, ConflictError, UnauthorizedError, ForbiddenError };

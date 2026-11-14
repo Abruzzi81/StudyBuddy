@@ -1,0 +1,478 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "StudyBuddy API",
+        "description": "API do zarządzania planem zajęć, zadaniami i ocenami w aplikacji StudyBuddy (Express.js + Knex + PostgreSQL).",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:3002/api",
+            "description": "Lokalny serwer deweloperski"
+        }
+    ],
+    "paths": {
+        "/subjects": {
+            "get": {
+                "summary": "Pobierz listę wszystkich przedmiotów",
+                "tags": [
+                    "Subjects"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sukces. Zwraca tablicę przedmiotów.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Subject"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Błąd serwera."
+                    }
+                }
+            },
+            "post": {
+                "summary": "Dodaj nowy przedmiot",
+                "tags": [
+                    "Subjects"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "maxLength": 100,
+                                        "example": "Matematyka Dyskretna"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Przedmiot został pomyślnie utworzony.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Subject"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Błąd walidacji danych (np. brak nazwy)."
+                    }
+                }
+            }
+        },
+        "/tasks": {
+            "get": {
+                "summary": "Pobierz listę wszystkich zadań",
+                "tags": [
+                    "Tasks"
+                ],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "status",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "PENDING",
+                                "IN_PROGRESS",
+                                "COMPLETED",
+                                "CANCELED"
+                            ]
+                        },
+                        "description": "Filtruj zadania po statusie"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sukces. Zwraca listę zadań.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Task"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Utwórz nowe zadanie powiązane z przedmiotem",
+                "tags": [
+                    "Tasks"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "title",
+                                    "subject_id"
+                                ],
+                                "properties": {
+                                    "subject_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "title": {
+                                        "type": "string",
+                                        "maxLength": 150,
+                                        "example": "Zadanie domowe z list"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Napisać implementację listy dwukierunkowej"
+                                    },
+                                    "due_date": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2026-11-20T18:00:00.000Z"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "HOMEWORK",
+                                            "TEST",
+                                            "OTHER"
+                                        ],
+                                        "default": "OTHER"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "PENDING",
+                                            "IN_PROGRESS",
+                                            "COMPLETED",
+                                            "CANCELED"
+                                        ],
+                                        "default": "PENDING"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Zadanie zostało utworzone.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Task"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Błąd walidacji (np. nieistniejący subject_id)."
+                    }
+                }
+            }
+        },
+        "/tasks/{id}": {
+            "parameters": [
+                {
+                    "in": "path",
+                    "name": "id",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    },
+                    "description": "ID zadania"
+                }
+            ],
+            "get": {
+                "summary": "Pobierz szczegóły konkretnego zadania",
+                "tags": [
+                    "Tasks"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Znaleziono zadanie.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Task"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Zadanie nie zostało znalezione."
+                    }
+                }
+            },
+            "put": {
+                "summary": "Aktualizuj zadanie",
+                "tags": [
+                    "Tasks"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "title": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "PENDING",
+                                            "IN_PROGRESS",
+                                            "COMPLETED",
+                                            "CANCELED"
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Zadanie zaktualizowane pomyślnie."
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Usuń zadanie",
+                "tags": [
+                    "Tasks"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Usunięto pomyślnie (brak treści odpowiedzi)."
+                    },
+                    "404": {
+                        "description": "Nie znaleziono zadania."
+                    }
+                }
+            }
+        },
+        "/grades": {
+            "get": {
+                "summary": "Pobierz listę wszystkich ocen",
+                "tags": [
+                    "Grades"
+                ],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "subject_id",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Filtruj oceny po ID przedmiotu"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sukces. Zwraca listę ocen.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Grade"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Dodaj nową ocenę",
+                "tags": [
+                    "Grades"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "subject_id",
+                                    "grade"
+                                ],
+                                "properties": {
+                                    "subject_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "grade": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 4.5
+                                    },
+                                    "weight": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "default": 1,
+                                        "example": 2
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Kolokwium nr 1"
+                                    },
+                                    "grade_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-11-14"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Ocena została dodana.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Grade"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Błąd walidacji (np. nieistniejący subject_id)."
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Subject": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Matematyka"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "Task": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "subject_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Sprawdzian z baz danych"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Powtórzyć relacje i klucze obce"
+                    },
+                    "due_date": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2026-11-18T10:00:00.000Z"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "HOMEWORK",
+                            "TEST",
+                            "OTHER"
+                        ],
+                        "example": "TEST"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "PENDING",
+                            "IN_PROGRESS",
+                            "COMPLETED",
+                            "CANCELED"
+                        ],
+                        "example": "PENDING"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "Grade": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "subject_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "grade": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 5
+                    },
+                    "weight": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 2
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Kolokwium z matematyki"
+                    },
+                    "grade_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-06-01"
+                    }
+                }
+            }
+        }
+    }
+}

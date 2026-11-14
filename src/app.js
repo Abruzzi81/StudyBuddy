@@ -1,7 +1,13 @@
 const express = require("express");
+const swaggerUi = require("swagger-ui-express");
+const openapiDocument = require("./docs/openapi.json");
 const requestLogger = require("./middleware/requestLogger");
 const notFound = require("./middleware/notFound");
 const errorHandler = require("./middleware/errorHandler");
+const authenticate = require("./middleware/authenticate");
+
+const { createAuthService } = require("./modules/auth/auth.service");
+const { createAuthRouter } = require("./modules/auth/auth.routes");
 
 // Moduł Tasks
 const { createTasksService } = require("./modules/tasks/tasks.service");
@@ -18,12 +24,27 @@ const { createGradesService } = require("./modules/grades/grades.service");
 const { createGradesController } = require("./modules/grades/grades.controller");
 const { createGradesRouter } = require("./modules/grades/grades.routes");
 
-// 1. Odbieramy wszystkie trzy funkcje transakcyjne w argumentach
-function createApp({ tasksRunInTransaction, subjectsRunInTransaction, gradesRunInTransaction }) {
+function createApp({ config, tasksRunInTransaction, subjectsRunInTransaction, gradesRunInTransaction, usersRepository }) {
     const app = express();
 
     app.use(requestLogger);
     app.use(express.json());
+
+    const requireAuth = authenticate(config.JWT_SECRET);
+
+    const authService = createAuthService({
+        usersRepository,
+        jwtSecret: config.JWT_SECRET,
+        jwtExpiresIn: config.JWT_EXPIRES_IN
+    });
+
+    app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapiDocument));
+
+    app.use("/api/auth", createAuthRouter({
+        authService, 
+        usersRepository,
+        authenticate: requireAuth
+    }));
 
     // Inicjalizacja modułu Tasks
     const tasksService = createTasksService({ runInTransaction: tasksRunInTransaction });

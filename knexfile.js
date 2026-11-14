@@ -1,3 +1,5 @@
+const config = require("./src/config");
+
 try {
   process.loadEnvFile();
 } catch {
