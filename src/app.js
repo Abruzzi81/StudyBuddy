@@ -1,29 +1,26 @@
 const express = require("express");
 const requestLogger = require("./middleware/requestLogger");
 const notFound = require("./middleware/notFound");
-const errorHandler = require("./middleware/errorHandler")
+const errorHandler = require("./middleware/errorHandler");
 
 const { createTasksService } = require("./modules/tasks/tasks.service");
 const { createTasksController } = require("./modules/tasks/tasks.controller");
 const { createTasksRouter } = require("./modules/tasks/tasks.routes");
 
+function createApp({ runInTransaction }) {
+  const app = express();
 
-function createApp( {tasksRepository} ) {
-    const app = express();
+  app.use(requestLogger);
+  app.use(express.json());
 
-    app.use(requestLogger);
-    app.use(express.json());
+  const tasksService = createTasksService({ runInTransaction });
+  
+  app.use("/api/tasks", createTasksRouter(createTasksController(tasksService)));
 
-    const tasksService = createTasksService({ tasksRepository });
-    const tasksController = createTasksController(tasksService);
-    app.use("/api/tasks", createTasksRouter(tasksController));
-    
+  app.use(notFound);
+  app.use(errorHandler);
 
-    app.use(notFound);
-    app.use(errorHandler);
-
-    return app;
+  return app;
 }
-
 
 module.exports = { createApp };

@@ -15,7 +15,7 @@ function createTasksController(taskService) {
 
         async create(req, res) {
             const task = await taskService.createTask(req.validated.body);
-            res.status(201).location('/api/tasks/${tasks.id}')
+            res.status(201).location('/api/tasks/${task.id}')
                 .json(toTaskResponse(task));
         },
 

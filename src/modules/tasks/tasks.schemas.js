@@ -1,27 +1,34 @@
 const { z } = require("zod");
 
+const TASK_STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELED'];
+const TASK_TYPES = ['HOMEWORK', 'TEST', 'OTHER'];
+
 const idParams = z.object({
     id: z.coerce.number().int().positive()
 });
 
-const createTasksBody = z.object({
-    roomId: z.number().int().positive(),
-    reservedBy: z.string().trim().min(3).max(100),
-    participants: z.number().int().positive(),
-    startTime: z.string().datetime({ offset: true }),
-    endTime: z.string().datetime({ offset: true }),
-
+const createTaskBody = z.object({
     title: z.string().trim().min(3).max(150),
     description: z.string().trim().min(3).max(500),
     due_date: z.string().datetime({ offset: true }),
-    type: z.string().trim().min(3).max(20),
-    status: z.string().trim().min(3).max(20),
-
+    type: z.enum(TASK_TYPES).default('OTHER'),
+    status: z.enum(TASK_STATUSES).default('PENDING')
 }).strict();
 
-const listTaskssQuery = z.object({
+const listTasksQuery = z.object({
     limit: z.coerce.number().int().positive().max(100).default(20),
+
+    sortBy: z.enum([
+        'id',
+        'title',
+        'due_date',
+        'createdAt',
+        'status',
+        'type'
+    ]).default('id'),
+
+    order: z.enum(['asc', 'desc']).default('desc'),
 });
 
 
-module.exports = { idParams, createTasksBody, listTaskssQuery };
+module.exports = { idParams, createTaskBody, listTasksQuery, TASK_STATUSES, TASK_TYPES };

@@ -1,32 +1,41 @@
-const { NotFoundError, ConflictError, ValidationError } = require("../../errors/AppError");
+const { NotFoundError } = require("../../errors/AppError");
 
-function createTasksService({tasksRepository, roomsRepository}) {
+function createTasksService({ runInTransaction }) {
 
     async function getAll() {
-        const tasks = await tasksRepository.list();
-        return tasks;
+        return await runInTransaction(async ({ tasksRepository }) => {
+            return await tasksRepository.list();
+        });
     }
     
     async function getTask(id) {
-        const task = await tasksRepository.findById(id);
+        return await runInTransaction(async ({ tasksRepository }) => {
+            const task = await tasksRepository.findById(id);
 
-        if(!task) { throw new NotFoundError("Tasks")};
+            if (!task) { 
+                throw new NotFoundError("Task"); 
+            }
 
-        return task;
+            return task;
+        });
     }
 
     async function createTask(input) {
-
-        return tasksRepository.create(input);
+        return await runInTransaction(async ({ tasksRepository }) => {
+            return await tasksRepository.create(input);
+        });
     }
 
     async function cancelTask(id) {
-        const task = await tasksRepository.findById(id);
+        return await runInTransaction(async ({ tasksRepository }) => {
+            const task = await tasksRepository.findById(id);
 
-        if(!task) 
-            throw new NotFoundError("Tasks");
+            if (!task) { 
+                throw new NotFoundError("Task"); 
+            }
 
-        return tasksRepository.cancel(id);
+            return await tasksRepository.cancel(id);
+        });
     }
 
     return { getAll, getTask, createTask, cancelTask };

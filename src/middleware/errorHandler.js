@@ -14,11 +14,22 @@ function errorHandler(err, req, res, next) {
 
     if (err.type == "entity.parse.failed") {
         return res.status(400).json({
-            error: {code: "INVALID_JSON", message: "Request body is not valid JSON",
-                requestId: req.id }
+            error: {
+                code: "INVALID_JSON", message: "Request body is not valid JSON",
+                requestId: req.id
+            }
         });
     }
 
+    if (err.code === "23505") {
+        return res.status(409).json({
+            error: {
+                code: "UNIQUE_VIOLATION", message: "Resource already exists",
+                requestId: req.id
+            }
+        });
+    }
+    
     console.error(`[${req.id}]`, err);
 
     res.status(500).json({
