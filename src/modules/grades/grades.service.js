@@ -7,13 +7,13 @@ function createGradesService({ runInTransaction }) {
             return await gradesRepository.list();
         });
     }
-    
+
     async function getGrade(id) {
         return await runInTransaction(async ({ gradesRepository }) => {
             const grade = await gradesRepository.findById(id);
 
-            if (!grade) { 
-                throw new NotFoundError("Grade"); 
+            if (!grade) {
+                throw new NotFoundError("Grade");
             }
 
             return grade;
@@ -21,7 +21,15 @@ function createGradesService({ runInTransaction }) {
     }
 
     async function createGrade(input) {
-        return await runInTransaction(async ({ gradesRepository }) => {
+        return await runInTransaction(async ({ gradesRepository, trx }) => {
+            const subjectExists = await trx('subjects')
+                .where({ id: input.subject_id })
+                .first();
+
+            if (!subjectExists) {
+                throw new NotFoundError("Subject"); // Rzuci ładny błąd 404, że przedmiotu nie ma
+            }
+
             return await gradesRepository.create(input);
         });
     }
@@ -30,8 +38,8 @@ function createGradesService({ runInTransaction }) {
         return await runInTransaction(async ({ gradesRepository }) => {
             const grade = await gradesRepository.findById(id);
 
-            if (!grade) { 
-                throw new NotFoundError("Grade"); 
+            if (!grade) {
+                throw new NotFoundError("Grade");
             }
 
             return await gradesRepository.remove(id);

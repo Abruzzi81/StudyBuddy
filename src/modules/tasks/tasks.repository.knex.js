@@ -18,6 +18,7 @@ function createKnexUnitOfWork(db) {
 
             async create(data) {
                 const taskData = {
+                    subject_id: data?.subject_id ?? null,
                     title: data?.title,
                     description: data?.description ?? null,
                     due_date: data?.due_date ?? null,

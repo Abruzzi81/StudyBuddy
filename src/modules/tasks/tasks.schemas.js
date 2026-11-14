@@ -8,6 +8,7 @@ const idParams = z.object({
 });
 
 const createTaskBody = z.object({
+    subject_id: z.coerce.number().int().positive().optional().nullable(),
     title: z.string().trim().min(3).max(150),
     description: z.string().trim().min(3).max(500),
     due_date: z.string().datetime({ offset: true }),

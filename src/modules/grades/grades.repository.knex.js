@@ -50,7 +50,7 @@ function createKnexUnitOfWork(db) {
     async function runInTransaction(work) {
         return await db.transaction(async (trx) => {
             const gradesRepository = createGradesRepository(trx);
-            return await work({ gradesRepository });
+            return await work({ gradesRepository, trx });
         });
     }
 

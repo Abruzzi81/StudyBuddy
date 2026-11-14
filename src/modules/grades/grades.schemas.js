@@ -6,10 +6,10 @@ const idParams = z.object({
 
 const createGradeBody = z.object({
     subject_id: z.coerce.number().int().positive(),
-    grade: z.coerce.number().min(1).max(6), // Zakładając szkolną skalę ocen np. 1-6 lub dowolną liczbową
+    grade: z.coerce.number().min(1).max(6), 
     weight: z.coerce.number().positive().default(1.0),
     description: z.string().trim().max(150).optional().nullable(),
-    grade_date: z.string().date().optional() // Lub format daty ISO, zależnie od preferencji
+    grade_date: z.string().date().optional()
 }).strict();
 
 const listGradesQuery = z.object({
