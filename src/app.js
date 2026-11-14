@@ -3,24 +3,36 @@ const requestLogger = require("./middleware/requestLogger");
 const notFound = require("./middleware/notFound");
 const errorHandler = require("./middleware/errorHandler");
 
+// Moduł Tasks
 const { createTasksService } = require("./modules/tasks/tasks.service");
 const { createTasksController } = require("./modules/tasks/tasks.controller");
 const { createTasksRouter } = require("./modules/tasks/tasks.routes");
 
-function createApp({ runInTransaction }) {
-  const app = express();
+// Moduł Subjects
+const { createSubjectsService } = require("./modules/subjects/subjects.service");
+const { createSubjectsController } = require("./modules/subjects/subjects.controller");
+const { createSubjectsRouter } = require("./modules/subjects/subjects.routes");
 
-  app.use(requestLogger);
-  app.use(express.json());
+// Przyjmujemy obiekt z dwoma różnymi funkcjami transakcyjnymi
+function createApp({ tasksRunInTransaction, subjectsRunInTransaction }) {
+    const app = express();
 
-  const tasksService = createTasksService({ runInTransaction });
-  
-  app.use("/api/tasks", createTasksRouter(createTasksController(tasksService)));
+    app.use(requestLogger);
+    app.use(express.json());
 
-  app.use(notFound);
-  app.use(errorHandler);
+    // Inicjalizacja modułu Tasks
+    const tasksService = createTasksService({ runInTransaction: tasksRunInTransaction });
+    app.use("/api/tasks", createTasksRouter(createTasksController(tasksService)));
 
-  return app;
+    // Inicjalizacja modułu Subjects
+    const subjectsService = createSubjectsService({ runInTransaction: subjectsRunInTransaction });
+    app.use("/api/subjects", createSubjectsRouter(createSubjectsController(subjectsService)));
+
+    // Obsługa błędów i nieznanych tras
+    app.use(notFound);
+    app.use(errorHandler);
+
+    return app;
 }
 
 module.exports = { createApp };
