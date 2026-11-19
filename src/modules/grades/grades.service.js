@@ -1,48 +1,36 @@
 const { NotFoundError } = require("../../errors/AppError");
 
 function createGradesService({ runInTransaction }) {
-
-    async function getAll() {
-        return await runInTransaction(async ({ gradesRepository }) => {
-            return await gradesRepository.list();
-        });
+    async function getAll(userId, query) {
+        return runInTransaction(({ gradesRepository }) =>
+            gradesRepository.list(userId, query)
+        );
     }
 
-    async function getGrade(id) {
-        return await runInTransaction(async ({ gradesRepository }) => {
-            const grade = await gradesRepository.findById(id);
-
-            if (!grade) {
-                throw new NotFoundError("Grade");
-            }
-
+    async function getGrade(id, userId) {
+        return runInTransaction(async ({ gradesRepository }) => {
+            const grade = await gradesRepository.findById(id, userId);
+            if (!grade) throw new NotFoundError("Grade");
             return grade;
         });
     }
 
-    async function createGrade(input) {
-        return await runInTransaction(async ({ gradesRepository, trx }) => {
-            const subjectExists = await trx('subjects')
-                .where({ id: input.subject_id })
+    async function createGrade(input, userId) {
+        return runInTransaction(async ({ gradesRepository, trx }) => {
+            const subject = await trx("subjects")
+                .where({ id: input.subject_id, user_id: userId })
                 .first();
 
-            if (!subjectExists) {
-                throw new NotFoundError("Subject"); // Rzuci ładny błąd 404, że przedmiotu nie ma
-            }
-
-            return await gradesRepository.create(input);
+            if (!subject) throw new NotFoundError("Subject");
+            return gradesRepository.create(input, userId);
         });
     }
 
-    async function removeGrade(id) {
-        return await runInTransaction(async ({ gradesRepository }) => {
-            const grade = await gradesRepository.findById(id);
-
-            if (!grade) {
-                throw new NotFoundError("Grade");
-            }
-
-            return await gradesRepository.remove(id);
+    async function removeGrade(id, userId) {
+        return runInTransaction(async ({ gradesRepository }) => {
+            const grade = await gradesRepository.remove(id, userId);
+            if (!grade) throw new NotFoundError("Grade");
+            return grade;
         });
     }
 

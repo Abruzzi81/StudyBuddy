@@ -1,51 +1,39 @@
 const { NotFoundError } = require("../../errors/AppError");
 
 function createTasksService({ runInTransaction }) {
-
-    async function getAll() {
-        return await runInTransaction(async ({ tasksRepository }) => {
-            return await tasksRepository.list();
-        });
+    async function getAll(userId, query) {
+        return runInTransaction(({ tasksRepository }) =>
+            tasksRepository.list(userId, query)
+        );
     }
 
-    async function getTask(id) {
-        return await runInTransaction(async ({ tasksRepository }) => {
-            const task = await tasksRepository.findById(id);
-
-            if (!task) {
-                throw new NotFoundError("Task");
-            }
-
+    async function getTask(id, userId) {
+        return runInTransaction(async ({ tasksRepository }) => {
+            const task = await tasksRepository.findById(id, userId);
+            if (!task) throw new NotFoundError("Task");
             return task;
         });
     }
 
-    async function createTask(input) {
-        return await runInTransaction(async ({ tasksRepository, trx }) => {
-
-            if (input.subject_id) {
-                const subjectExists = await trx('subjects')
-                    .where({ id: input.subject_id })
+    async function createTask(input, userId) {
+        return runInTransaction(async ({ tasksRepository, trx }) => {
+            if (input.subject_id != null) {
+                const subject = await trx("subjects")
+                    .where({ id: input.subject_id, user_id: userId })
                     .first();
 
-                if (!subjectExists) {
-                    throw new NotFoundError("Subject"); // Zwróci 404, jeśli przedmiotu nie ma
-                }
+                if (!subject) throw new NotFoundError("Subject");
             }
 
-            return await tasksRepository.create(input);
+            return tasksRepository.create(input, userId);
         });
     }
 
-    async function cancelTask(id) {
-        return await runInTransaction(async ({ tasksRepository }) => {
-            const task = await tasksRepository.findById(id);
-
-            if (!task) {
-                throw new NotFoundError("Task");
-            }
-
-            return await tasksRepository.cancel(id);
+    async function cancelTask(id, userId) {
+        return runInTransaction(async ({ tasksRepository }) => {
+            const task = await tasksRepository.cancel(id, userId);
+            if (!task) throw new NotFoundError("Task");
+            return task;
         });
     }
 

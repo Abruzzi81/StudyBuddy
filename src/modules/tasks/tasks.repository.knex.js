@@ -1,58 +1,50 @@
 function createKnexUnitOfWork(db) {
     function createTasksRepository(trx) {
         return {
-            async list({ limit = 20, sortBy = 'id', order = 'asc' } = {}) {
-                return await trx('tasks')
-                    .select('*')
+            async list(userId, { limit = 20, sortBy = "id", order = "desc" } = {}) {
+                return trx("tasks")
+                    .where({ user_id: userId })
+                    .select("*")
                     .orderBy(sortBy, order)
                     .limit(limit);
             },
 
-            async findById(id) {
-                const task = await trx('tasks')
-                    .where({ id })
+            async findById(id, userId) {
+                const task = await trx("tasks")
+                    .where({ id, user_id: userId })
                     .first();
-
                 return task ?? null;
             },
 
-            async create(data) {
-                const taskData = {
-                    subject_id: data?.subject_id ?? null,
-                    title: data?.title,
-                    description: data?.description ?? null,
-                    due_date: data?.due_date ?? null,
-                    type: data?.type ?? null,
-                    status: data?.status ?? 'PENDING'
-                };
-
-                if (!taskData.title) {
-                    throw new Error("Pole 'title' jest wymagane!");
-                }
-
-                const [task] = await trx('tasks')
-                    .insert(taskData)
-                    .returning('*');
-
+            async create(data, userId) {
+                const [task] = await trx("tasks")
+                    .insert({
+                        user_id: userId,
+                        subject_id: data.subject_id ?? null,
+                        title: data.title,
+                        description: data.description ?? null,
+                        due_date: data.due_date ?? null,
+                        type: data.type ?? "OTHER",
+                        status: data.status ?? "PENDING"
+                    })
+                    .returning("*");
                 return task;
             },
 
-            async cancel(id) {
-                const [task] = await trx('tasks')
-                    .where({ id })
-                    .update({ status: 'CANCELED' })
-                    .returning('*');
-
+            async cancel(id, userId) {
+                const [task] = await trx("tasks")
+                    .where({ id, user_id: userId })
+                    .update({ status: "CANCELED" })
+                    .returning("*");
                 return task ?? null;
             }
         };
     }
 
-    // Funkcja zarządzająca transakcją, przekazywana do serwisu
     async function runInTransaction(work) {
-        return await db.transaction(async (trx) => {
+        return db.transaction(async (trx) => {
             const tasksRepository = createTasksRepository(trx);
-            return await work({ tasksRepository });
+            return work({ tasksRepository, trx });
         });
     }
 

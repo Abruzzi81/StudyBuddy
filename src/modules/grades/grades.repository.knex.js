@@ -1,56 +1,49 @@
 function createKnexUnitOfWork(db) {
     function createGradesRepository(trx) {
         return {
-            async list({ limit = 20, sortBy = 'id', order = 'asc' } = {}) {
-                return await trx('grades')
-                    .select('*')
+            async list(userId, { limit = 20, sortBy = "id", order = "asc" } = {}) {
+                return trx("grades")
+                    .where({ user_id: userId })
+                    .select("*")
                     .orderBy(sortBy, order)
                     .limit(limit);
             },
 
-            async findById(id) {
-                const grade = await trx('grades')
-                    .where({ id })
+            async findById(id, userId) {
+                const grade = await trx("grades")
+                    .where({ id, user_id: userId })
                     .first();
-
                 return grade ?? null;
             },
 
-            async create(data) {
-                const gradeData = {
-                    subject_id: data?.subject_id,
-                    grade: data?.grade,
-                    weight: data?.weight ?? 1.0,
-                    description: data?.description ?? null,
-                    grade_date: data?.grade_date ?? new Date()
-                };
-
-                if (!gradeData.subject_id || !gradeData.grade) {
-                    throw new Error("Pola 'subject_id' oraz 'grade' są wymagane!");
-                }
-
-                const [grade] = await trx('grades')
-                    .insert(gradeData)
-                    .returning('*');
-
+            async create(data, userId) {
+                const [grade] = await trx("grades")
+                    .insert({
+                        user_id: userId,
+                        subject_id: data.subject_id,
+                        grade: data.grade,
+                        weight: data.weight ?? 1.0,
+                        description: data.description ?? null,
+                        grade_date: data.grade_date ?? new Date()
+                    })
+                    .returning("*");
                 return grade;
             },
 
-            async remove(id) {
-                const [grade] = await trx('grades')
-                    .where({ id })
+            async remove(id, userId) {
+                const [grade] = await trx("grades")
+                    .where({ id, user_id: userId })
                     .delete()
-                    .returning('*');
-
+                    .returning("*");
                 return grade ?? null;
             }
         };
     }
 
     async function runInTransaction(work) {
-        return await db.transaction(async (trx) => {
+        return db.transaction(async (trx) => {
             const gradesRepository = createGradesRepository(trx);
-            return await work({ gradesRepository, trx });
+            return work({ gradesRepository, trx });
         });
     }
 

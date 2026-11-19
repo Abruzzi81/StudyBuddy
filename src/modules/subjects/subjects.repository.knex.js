@@ -1,31 +1,35 @@
 function createKnexUnitOfWork(db) {
     function createSubjectsRepository(trx) {
         return {
-            async list({ limit = 20, sortBy = 'id', order = 'asc' } = {}) {
+            async list(userId, {
+                limit = 20,
+                sortBy = 'id',
+                order = 'asc'
+            } = {}) {
                 return await trx('subjects')
+                    .where({ user_id: userId })
                     .select('*')
                     .orderBy(sortBy, order)
                     .limit(limit);
             },
 
-            async findById(id) {
+            async findById(id, userId) {
                 const subject = await trx('subjects')
-                    .where({ id })
+                    .where({
+                        id,
+                        user_id: userId
+                    })
                     .first();
 
                 return subject ?? null;
             },
 
-            async create(data) {
+            async create(data, userId) {
                 const subjectData = {
                     name: data?.name,
                     teacher: data?.teacher ?? null,
-                    user_id: data?.user_id ?? null,
+                    user_id: userId
                 };
-
-                if (!subjectData.name) {
-                    throw new Error("Pole 'name' jest wymagane!");
-                }
 
                 const [subject] = await trx('subjects')
                     .insert(subjectData)
@@ -34,9 +38,12 @@ function createKnexUnitOfWork(db) {
                 return subject;
             },
 
-            async remove(id) {
+            async remove(id, userId) {
                 const [subject] = await trx('subjects')
-                    .where({ id })
+                    .where({
+                        id,
+                        user_id: userId
+                    })
                     .delete()
                     .returning('*');
 
