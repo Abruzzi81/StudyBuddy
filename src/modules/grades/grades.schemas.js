@@ -13,6 +13,7 @@ const createGradeBody = z.object({
 }).strict();
 
 const listGradesQuery = z.object({
+    page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(20),
     sortBy: z.enum([
         'id',
@@ -23,6 +24,10 @@ const listGradesQuery = z.object({
         'createdAt'
     ]).default('id'),
     order: z.enum(['asc', 'desc']).default('asc'),
+    subject_id: z.coerce.number().int().positive().optional(),
 });
 
-module.exports = { idParams, createGradeBody, listGradesQuery };
+const gradeAverageQuery = z.object({
+    subject_id: z.coerce.number().int().positive().optional()
+});
+module.exports = { idParams, createGradeBody, listGradesQuery, gradeAverageQuery };

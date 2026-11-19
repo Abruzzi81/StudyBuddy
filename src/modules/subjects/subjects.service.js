@@ -21,6 +21,14 @@ function createSubjectsService({ runInTransaction }) {
         );
     }
 
+    async function updateSubject(id, input, userId) {
+        return runInTransaction(async ({ subjectsRepository }) => {
+            const subject = await subjectsRepository.update(id, input, userId);
+            if (!subject) throw new NotFoundError("Subject");
+            return subject;
+        });
+    }
+
     async function removeSubject(id, userId) {
         return runInTransaction(async ({ subjectsRepository }) => {
             const subject = await subjectsRepository.remove(id, userId);
@@ -29,7 +37,7 @@ function createSubjectsService({ runInTransaction }) {
         });
     }
 
-    return { getAll, getSubject, createSubject, removeSubject };
+    return { getAll, getSubject, createSubject, updateSubject, removeSubject };
 }
 
 module.exports = { createSubjectsService };

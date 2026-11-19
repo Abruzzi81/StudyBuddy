@@ -1,14 +1,23 @@
+const bcrypt = require("bcryptjs");
 
 exports.up = async function (knex) {
-    const fallbackUser = await knex("users")
+    let fallbackUser = await knex("users")
         .where({ role: "USER" })
         .orderBy("id", "asc")
         .first();
 
+    // Jeśli na świeżej bazie nie ma jeszcze użytkownika z rolą USER, utwórz go awaryjnie
     if (!fallbackUser) {
-        throw new Error(
-            "Nie można przypisać właścicieli: tabela users nie zawiera użytkownika z rolą USER."
-        );
+        const defaultPasswordHash = await bcrypt.hash("ChangeMe123!", 12);
+        const [createdUser] = await knex("users")
+            .insert({
+                email: "default.user@studybuddy.pl",
+                password_hash: defaultPasswordHash,
+                role: "USER",
+            })
+            .returning(["id", "email", "role"]);
+
+        fallbackUser = createdUser;
     }
 
     // Uzupełnienie właściciela istniejących przedmiotów.

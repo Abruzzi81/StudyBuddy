@@ -18,9 +18,16 @@ function createUsersRepository(db) {
         return user;
     }
 
+    async function listAll() {
+        return await db("users")
+            .select("id", "email", "role", "created_at")
+            .orderBy("id", "asc");
+    }
+
     return {
         findByEmail,
         findById,
+        listAll,
         create
     };
 }

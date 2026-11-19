@@ -1,54 +1,53 @@
 function createKnexUnitOfWork(db) {
-    function createTasksRepository(trx) {
-        return {
-            async list(userId, { limit = 20, sortBy = "id", order = "desc" } = {}) {
-                return trx("tasks")
-                    .where({ user_id: userId })
-                    .select("*")
-                    .orderBy(sortBy, order)
-                    .limit(limit);
-            },
-
-            async findById(id, userId) {
-                const task = await trx("tasks")
-                    .where({ id, user_id: userId })
-                    .first();
-                return task ?? null;
-            },
-
-            async create(data, userId) {
-                const [task] = await trx("tasks")
-                    .insert({
-                        user_id: userId,
-                        subject_id: data.subject_id ?? null,
-                        title: data.title,
-                        description: data.description ?? null,
-                        due_date: data.due_date ?? null,
-                        type: data.type ?? "OTHER",
-                        status: data.status ?? "PENDING"
-                    })
-                    .returning("*");
-                return task;
-            },
-
-            async cancel(id, userId) {
-                const [task] = await trx("tasks")
-                    .where({ id, user_id: userId })
-                    .update({ status: "CANCELED" })
-                    .returning("*");
-                return task ?? null;
-            }
-        };
-    }
-
-    async function runInTransaction(work) {
-        return db.transaction(async (trx) => {
-            const tasksRepository = createTasksRepository(trx);
-            return work({ tasksRepository, trx });
-        });
-    }
-
-    return { runInTransaction };
+  function createTasksRepository(trx) {
+    return {
+      async list(userId, { page = 1, limit = 20, sortBy = "id", order = "desc", status, subject_id } = {}) {
+        const query = trx("tasks").where({ user_id: userId });
+        if (status) query.where({ status });
+        if (subject_id) query.where({ subject_id });
+        const countRow = await query.clone().count({ total: "*" }).first();
+        const total = Number(countRow.total);
+        const data = await query.clone().select("*").orderBy(sortBy === "createdAt" ? "created_at" : sortBy, order)
+          .limit(limit).offset((page - 1) * limit);
+        return { data, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+      },
+      async summary(userId) {
+        const rows = await trx("tasks").where({ user_id: userId })
+          .select("status").count({ count: "*" }).groupBy("status");
+        const summary = { total: 0, PENDING: 0, IN_PROGRESS: 0, COMPLETED: 0, CANCELED: 0 };
+        for (const row of rows) {
+          const count = Number(row.count);
+          summary[row.status] = count;
+          summary.total += count;
+        }
+        return summary;
+      },
+      async findById(id, userId) {
+        const task = await trx("tasks").where({ id, user_id: userId }).first();
+        return task ?? null;
+      },
+      async create(data, userId) {
+        const [task] = await trx("tasks").insert({
+          user_id: userId, subject_id: data.subject_id ?? null, title: data.title,
+          description: data.description ?? null, due_date: data.due_date ?? null,
+          type: data.type ?? "OTHER", status: data.status ?? "PENDING"
+        }).returning("*");
+        return task;
+      },
+      async update(id, data, userId) {
+        const [task] = await trx("tasks").where({ id, user_id: userId }).update(data).returning("*");
+        return task ?? null;
+      },
+      async cancel(id, userId) {
+        const [task] = await trx("tasks").where({ id, user_id: userId })
+          .update({ status: "CANCELED" }).returning("*");
+        return task ?? null;
+      }
+    };
+  }
+  async function runInTransaction(work) {
+    return db.transaction(async trx => work({ tasksRepository: createTasksRepository(trx), trx }));
+  }
+  return { runInTransaction };
 }
-
 module.exports = { createKnexUnitOfWork };

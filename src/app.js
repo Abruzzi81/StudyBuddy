@@ -5,6 +5,7 @@ const requestLogger = require("./middleware/requestLogger");
 const notFound = require("./middleware/notFound");
 const errorHandler = require("./middleware/errorHandler");
 const authenticate = require("./middleware/authenticate");
+const authorize = require("./middleware/authorize");
 
 const { createAuthService } = require("./modules/auth/auth.service");
 const { createAuthRouter } = require("./modules/auth/auth.routes");
@@ -36,12 +37,27 @@ function createApp({
         jwtExpiresIn: config.JWT_EXPIRES_IN
     });
 
-    app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapiDocument));
+    app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapiDocument, {
+        swaggerOptions: {
+            persistAuthorization: true
+        }
+    }));
     app.use("/api/auth", createAuthRouter({
         authService,
         usersRepository,
         authenticate: requireAuth
     }));
+
+    // Endpoint administracyjny: dostęp wyłącznie dla użytkowników z rolą ADMIN.
+    app.get("/api/admin/users", requireAuth, authorize("ADMIN"), async (req, res) => {
+        const users = await usersRepository.listAll();
+        res.json(users.map(user => ({
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            created_at: user.created_at
+        })));
+    });
 
     const tasksService = createTasksService({ runInTransaction: tasksRunInTransaction });
     app.use("/api/tasks", requireAuth, createTasksRouter(createTasksController(tasksService)));

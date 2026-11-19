@@ -3,8 +3,8 @@ const { toSubjectResponse } = require("./subjects.mapper");
 function createSubjectsController(subjectService) {
     return {
         async getAll(req, res) {
-            const subjects = await subjectService.getAll(req.user.id, req.validated.query);
-            res.json(subjects.map(toSubjectResponse));
+            const result = await subjectService.getAll(req.user.id, req.validated.query);
+            res.json({ data: result.data.map(toSubjectResponse), pagination: result.pagination });
         },
 
         async getById(req, res) {
@@ -17,6 +17,11 @@ function createSubjectsController(subjectService) {
             res.status(201)
                 .location(`/api/subjects/${subject.id}`)
                 .json(toSubjectResponse(subject));
+        },
+
+        async update(req, res) {
+            const subject = await subjectService.updateSubject(req.validated.params.id, req.validated.body, req.user.id);
+            res.json(toSubjectResponse(subject));
         },
 
         async remove(req, res) {

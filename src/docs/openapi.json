@@ -12,6 +12,155 @@
         }
     ],
     "paths": {
+        "/auth/register": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Rejestracja nowego użytkownika",
+                "description": "Tworzy konto użytkownika. Hasło musi mieć od 10 do 72 znaków.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "student@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "minLength": 10,
+                                        "maxLength": 72,
+                                        "example": "MojeHaslo123"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Użytkownik został utworzony",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Adres e-mail jest już zarejestrowany"
+                    },
+                    "400": {
+                        "description": "Nieprawidłowe dane"
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logowanie użytkownika",
+                "description": "Loguje użytkownika i zwraca token JWT.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "student@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "example": "MojeHaslo123"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Logowanie zakończone sukcesem",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "accessToken": {
+                                            "type": "string",
+                                            "description": "Token JWT"
+                                        },
+                                        "tokenType": {
+                                            "type": "string",
+                                            "example": "Bearer"
+                                        },
+                                        "expiresIn": {
+                                            "type": "string",
+                                            "example": "1h"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Nieprawidłowy e-mail lub hasło"
+                    }
+                }
+            }
+        },
+        "/auth/me": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Pobierz dane zalogowanego użytkownika",
+                "description": "Zwraca dane użytkownika na podstawie tokenu JWT.",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Dane zalogowanego użytkownika",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Brak lub nieprawidłowy token JWT"
+                    },
+                    "404": {
+                        "description": "Nie znaleziono użytkownika"
+                    }
+                }
+            }
+        },
         "/subjects": {
             "get": {
                 "summary": "Pobierz listę wszystkich przedmiotów",
@@ -24,9 +173,21 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Subject"
+                                    "type": "object",
+                                    "required": [
+                                        "data",
+                                        "pagination"
+                                    ],
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Subject"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "$ref": "#/components/schemas/Pagination"
+                                        }
                                     }
                                 }
                             }
@@ -35,7 +196,36 @@
                     "500": {
                         "description": "Błąd serwera."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "page",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "default": 1
+                        },
+                        "description": "Numer strony"
+                    },
+                    {
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "default": 20,
+                            "maximum": 100
+                        },
+                        "description": "Liczba rekordów na stronie (maks. 100)"
+                    }
+                ],
+                "description": "Odpowiedź zawiera pola data oraz pagination (page, limit, total, totalPages)."
             },
             "post": {
                 "summary": "Dodaj nowy przedmiot",
@@ -76,7 +266,12 @@
                     "400": {
                         "description": "Błąd walidacji danych (np. brak nazwy)."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/tasks": {
@@ -99,6 +294,36 @@
                             ]
                         },
                         "description": "Filtruj zadania po statusie"
+                    },
+                    {
+                        "in": "query",
+                        "name": "subject_id",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "description": "Filtruj zadania po ID przedmiotu"
+                    },
+                    {
+                        "in": "query",
+                        "name": "page",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "default": 1
+                        },
+                        "description": "Numer strony"
+                    },
+                    {
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "default": 20,
+                            "maximum": 100
+                        },
+                        "description": "Liczba rekordów na stronie (maks. 100)"
                     }
                 ],
                 "responses": {
@@ -107,15 +332,33 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Task"
+                                    "type": "object",
+                                    "required": [
+                                        "data",
+                                        "pagination"
+                                    ],
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Task"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "$ref": "#/components/schemas/Pagination"
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "description": "Odpowiedź zawiera pola data oraz pagination (page, limit, total, totalPages)."
             },
             "post": {
                 "summary": "Utwórz nowe zadanie powiązane z przedmiotem",
@@ -144,12 +387,14 @@
                                     },
                                     "description": {
                                         "type": "string",
-                                        "example": "Napisać implementację listy dwukierunkowej"
+                                        "example": "Napisać implementację listy dwukierunkowej",
+                                        "nullable": true
                                     },
                                     "due_date": {
                                         "type": "string",
                                         "format": "date-time",
-                                        "example": "2026-11-20T18:00:00.000Z"
+                                        "example": "2026-11-20T18:00:00.000Z",
+                                        "nullable": true
                                     },
                                     "type": {
                                         "type": "string",
@@ -189,7 +434,12 @@
                     "400": {
                         "description": "Błąd walidacji (np. nieistniejący subject_id)."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/tasks/{id}": {
@@ -223,10 +473,15 @@
                     "404": {
                         "description": "Zadanie nie zostało znalezione."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             },
-            "put": {
-                "summary": "Aktualizuj zadanie",
+            "patch": {
+                "summary": "Częściowo zaktualizuj zadanie",
                 "tags": [
                     "Tasks"
                 ],
@@ -235,47 +490,34 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "title": {
-                                        "type": "string"
-                                    },
-                                    "description": {
-                                        "type": "string"
-                                    },
-                                    "status": {
-                                        "type": "string",
-                                        "enum": [
-                                            "PENDING",
-                                            "IN_PROGRESS",
-                                            "COMPLETED",
-                                            "CANCELED"
-                                        ]
-                                    }
-                                }
+                                "$ref": "#/components/schemas/UpdateTask"
                             }
                         }
                     }
                 },
                 "responses": {
                     "200": {
-                        "description": "Zadanie zaktualizowane pomyślnie."
-                    }
-                }
-            },
-            "delete": {
-                "summary": "Usuń zadanie",
-                "tags": [
-                    "Tasks"
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Usunięto pomyślnie (brak treści odpowiedzi)."
+                        "description": "Zadanie zaktualizowane.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Task"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Nieprawidłowe dane."
                     },
                     "404": {
-                        "description": "Nie znaleziono zadania."
+                        "description": "Nie znaleziono zadania lub przedmiotu."
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
             }
         },
         "/grades": {
@@ -292,6 +534,27 @@
                             "type": "integer"
                         },
                         "description": "Filtruj oceny po ID przedmiotu"
+                    },
+                    {
+                        "in": "query",
+                        "name": "limit",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 20
+                        },
+                        "description": "Maksymalna liczba zwracanych ocen"
+                    },
+                    {
+                        "in": "query",
+                        "name": "page",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "default": 1
+                        },
+                        "description": "Numer strony"
                     }
                 ],
                 "responses": {
@@ -300,15 +563,33 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Grade"
+                                    "type": "object",
+                                    "required": [
+                                        "data",
+                                        "pagination"
+                                    ],
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Grade"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "$ref": "#/components/schemas/Pagination"
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "description": "Odpowiedź zawiera pola data oraz pagination (page, limit, total, totalPages)."
             },
             "post": {
                 "summary": "Dodaj nową ocenę",
@@ -368,6 +649,259 @@
                     },
                     "400": {
                         "description": "Błąd walidacji (np. nieistniejący subject_id)."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/tasks/summary": {
+            "get": {
+                "summary": "Pobierz podsumowanie zadań użytkownika",
+                "description": "Zwraca liczbę wszystkich zadań oraz liczbę zadań w poszczególnych statusach.",
+                "tags": [
+                    "Tasks"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Statystyki zadań.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TaskSummary"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Brak uwierzytelnienia."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/tasks/{id}/cancel": {
+            "patch": {
+                "summary": "Anuluj zadanie",
+                "tags": [
+                    "Tasks"
+                ],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Zadanie anulowane.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Task"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Nie znaleziono zadania."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/subjects/{id}": {
+            "parameters": [
+                {
+                    "in": "path",
+                    "name": "id",
+                    "required": true,
+                    "schema": {
+                        "type": "integer",
+                        "minimum": 1
+                    }
+                }
+            ],
+            "patch": {
+                "summary": "Zaktualizuj przedmiot",
+                "tags": [
+                    "Subjects"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateSubject"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Przedmiot zaktualizowany.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Subject"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Nieprawidłowe dane."
+                    },
+                    "404": {
+                        "description": "Nie znaleziono przedmiotu."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "get": {
+                "summary": "Pobierz przedmiot",
+                "tags": [
+                    "Subjects"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Szczegóły przedmiotu.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Subject"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Nie znaleziono przedmiotu."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "summary": "Usuń przedmiot",
+                "tags": [
+                    "Subjects"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Usunięty przedmiot.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Subject"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Nie znaleziono przedmiotu."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/grades/average": {
+            "get": {
+                "summary": "Oblicz średnią ważoną ocen",
+                "description": "Bez subject_id zwraca średnią ze wszystkich ocen użytkownika; z subject_id ogranicza obliczenie do wskazanego przedmiotu.",
+                "tags": [
+                    "Grades"
+                ],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "subject_id",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "description": "Opcjonalne ID przedmiotu."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Średnia ważona i liczba ocen.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GradeAverage"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Nie znaleziono przedmiotu."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/admin/users": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Lista użytkowników (ADMIN)",
+                "description": "Endpoint dostępny wyłącznie dla użytkowników z rolą ADMIN. Nie zwraca hashy haseł.",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista użytkowników",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/User"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Brak lub nieprawidłowy token JWT"
+                    },
+                    "403": {
+                        "description": "Wymagana rola ADMIN"
                     }
                 }
             }
@@ -472,6 +1006,172 @@
                         "example": "2026-06-01"
                     }
                 }
+            },
+            "UpdateTask": {
+                "type": "object",
+                "minProperties": 1,
+                "additionalProperties": false,
+                "properties": {
+                    "subject_id": {
+                        "type": "integer",
+                        "nullable": true,
+                        "minimum": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 150
+                    },
+                    "description": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 500,
+                        "nullable": true
+                    },
+                    "due_date": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "HOMEWORK",
+                            "TEST",
+                            "OTHER"
+                        ]
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "PENDING",
+                            "IN_PROGRESS",
+                            "COMPLETED",
+                            "CANCELED"
+                        ]
+                    }
+                }
+            },
+            "UpdateSubject": {
+                "type": "object",
+                "minProperties": 1,
+                "additionalProperties": false,
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 100
+                    },
+                    "teacher": {
+                        "type": "string",
+                        "minLength": 2,
+                        "maxLength": 100,
+                        "nullable": true
+                    }
+                }
+            },
+            "TaskSummary": {
+                "type": "object",
+                "required": [
+                    "total",
+                    "PENDING",
+                    "IN_PROGRESS",
+                    "COMPLETED",
+                    "CANCELED"
+                ],
+                "properties": {
+                    "total": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "PENDING": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "IN_PROGRESS": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "COMPLETED": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "CANCELED": {
+                        "type": "integer",
+                        "minimum": 0
+                    }
+                }
+            },
+            "GradeAverage": {
+                "type": "object",
+                "required": [
+                    "average",
+                    "count"
+                ],
+                "properties": {
+                    "average": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 4.25
+                    },
+                    "count": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "example": 8
+                    }
+                }
+            },
+            "Pagination": {
+                "type": "object",
+                "properties": {
+                    "page": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "example": 20
+                    },
+                    "total": {
+                        "type": "integer",
+                        "example": 45
+                    },
+                    "totalPages": {
+                        "type": "integer",
+                        "example": 3
+                    }
+                }
+            },
+            "User": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "USER",
+                            "ADMIN"
+                        ]
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "Wklej sam token JWT otrzymany z POST /api/auth/login. Prefiks Bearer zostanie dodany automatycznie przez Swagger UI."
             }
         }
     }

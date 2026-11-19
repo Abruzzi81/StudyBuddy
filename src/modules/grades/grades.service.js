@@ -7,6 +7,16 @@ function createGradesService({ runInTransaction }) {
         );
     }
 
+    async function getAverage(userId, subjectId) {
+        return runInTransaction(async ({ gradesRepository, trx }) => {
+            if (subjectId) {
+                const subject = await trx("subjects").where({ id: subjectId, user_id: userId }).first();
+                if (!subject) throw new NotFoundError("Subject");
+            }
+            return gradesRepository.average(userId, subjectId);
+        });
+    }
+
     async function getGrade(id, userId) {
         return runInTransaction(async ({ gradesRepository }) => {
             const grade = await gradesRepository.findById(id, userId);
@@ -34,7 +44,7 @@ function createGradesService({ runInTransaction }) {
         });
     }
 
-    return { getAll, getGrade, createGrade, removeGrade };
+    return { getAll, getAverage, getGrade, createGrade, removeGrade };
 }
 
 module.exports = { createGradesService };
