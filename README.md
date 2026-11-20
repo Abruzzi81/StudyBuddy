@@ -131,18 +131,11 @@ http://localhost:3002
 
 Port może być inny, jeśli ustawiono inną wartość `PORT`.
 
-# StudyBuddy – diagram modelu danych (ERD)
-
-Diagram opracowano na podstawie migracji Knex znajdujących się w `src/db/migrations/` w przesłanym archiwum.
-
 ## Diagram ERD
 
 ```mermaid
 erDiagram
     USERS ||--o{ SUBJECTS : "owns"
-    USERS ||--o{ TASKS : "owns"
-    USERS o|--o{ TASKS : "created_by"
-    USERS ||--o{ GRADES : "owns"
     SUBJECTS o|--o{ TASKS : "has"
     SUBJECTS ||--o{ GRADES : "has"
 
@@ -164,9 +157,7 @@ erDiagram
 
     TASKS {
         int id PK
-        int user_id FK
         int subject_id FK "nullable"
-        int created_by FK "nullable"
         varchar title
         text description
         timestamp due_date
@@ -177,7 +168,6 @@ erDiagram
 
     GRADES {
         int id PK
-        int user_id FK
         int subject_id FK
         decimal grade
         decimal weight
@@ -187,16 +177,6 @@ erDiagram
     }
 ```
 
-## Opis relacji
-
-| Relacja | Znaczenie | Ograniczenie |
-|---|---|---|
-| `USERS` → `SUBJECTS` | Jeden użytkownik może mieć wiele przedmiotów; każdy przedmiot ma jednego właściciela. | `subjects.user_id` → `users.id`, `ON DELETE CASCADE` |
-| `USERS` → `TASKS` (właściciel) | Jeden użytkownik może mieć wiele zadań; każde zadanie ma jednego właściciela. | `tasks.user_id` → `users.id`, `ON DELETE CASCADE` |
-| `USERS` → `TASKS` (twórca) | Zadanie może wskazywać użytkownika, który je utworzył. Pole jest opcjonalne. | `tasks.created_by` → `users.id`, `ON DELETE SET NULL` |
-| `SUBJECTS` → `TASKS` | Przedmiot może mieć wiele zadań; zadanie może nie być przypisane do przedmiotu. | `tasks.subject_id` → `subjects.id`, `ON DELETE CASCADE` |
-| `USERS` → `GRADES` | Jeden użytkownik może mieć wiele ocen; każda ocena ma jednego właściciela. | `grades.user_id` → `users.id`, `ON DELETE CASCADE` |
-| `SUBJECTS` → `GRADES` | Jeden przedmiot może mieć wiele ocen; każda ocena jest przypisana do jednego przedmiotu. | `grades.subject_id` → `subjects.id`, `ON DELETE CASCADE` |
 
 ## Ograniczenia i wartości pól
 
@@ -210,7 +190,6 @@ erDiagram
 - `tasks.status`: `PENDING`, `IN_PROGRESS`, `COMPLETED`, `CANCELED`; domyślnie `PENDING`.
 - `grades.grade` i `grades.weight` są typu `DECIMAL(3,2)`; domyślna waga to `1.00`.
 - `grades.grade_date` jest wymagane i domyślnie przyjmuje bieżącą datę.
-  
 
 ## Dokumentacja API
 
