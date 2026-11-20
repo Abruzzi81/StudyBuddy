@@ -10,8 +10,19 @@ function createGradesService({ runInTransaction }) {
     async function getAverage(userId, subjectId) {
         return runInTransaction(async ({ gradesRepository, trx }) => {
             if (subjectId) {
-                const subject = await trx("subjects").where({ id: subjectId, user_id: userId }).first();
-                if (!subject) throw new NotFoundError("Subject");
+                const query = trx("subjects").where({
+                    id: subjectId
+                });
+
+                if (userId !== null) {
+                    query.where({ user_id: userId });
+                }
+
+                const subject = await query.first();
+
+                if (!subject) {
+                    throw new NotFoundError("Subject");
+                }
             }
             return gradesRepository.average(userId, subjectId);
         });

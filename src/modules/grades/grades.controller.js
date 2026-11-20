@@ -3,17 +3,26 @@ const { toGradeResponse } = require("./grades.mapper");
 function createGradesController(gradeService) {
     return {
         async getAll(req, res) {
-            const result = await gradeService.getAll(req.user.id, req.validated.query);
+            const userId = req.user.role === "ADMIN"
+                ? null
+                : req.user.id;
+            const result = await gradeService.getAll(userId, req.validated.query);
             res.json({ data: result.data.map(toGradeResponse), pagination: result.pagination });
         },
 
         async getAverage(req, res) {
-            const result = await gradeService.getAverage(req.user.id, req.validated.query.subject_id);
+            const userId = req.user.role === "ADMIN"
+                ? null
+                : req.user.id;
+            const result = await gradeService.getAverage(userId, req.validated.query.subject_id);
             res.json(result);
         },
 
         async getById(req, res) {
-            const grade = await gradeService.getGrade(req.validated.params.id, req.user.id);
+            const userId = req.user.role === "ADMIN"
+                ? null
+                : req.user.id;
+            const grade = await gradeService.getGrade(req.validated.params.id, userId);
             res.json(toGradeResponse(grade));
         },
 

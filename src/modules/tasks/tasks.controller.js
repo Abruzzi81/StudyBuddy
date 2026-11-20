@@ -2,14 +2,24 @@ const { toTaskResponse } = require("./tasks.mapper");
 function createTasksController(taskService) {
   return {
     async getAll(req, res) {
-      const result = await taskService.getAll(req.user.id, req.validated.query);
+      const userId = req.user.role === "ADMIN"
+        ? null
+        : req.user.id;
+      const result = await taskService.getAll(userId, req.validated.query);
       res.json({ data: result.data.map(toTaskResponse), pagination: result.pagination });
     },
     async getSummary(req, res) {
-      res.json(await taskService.getSummary(req.user.id));
+      const userId = req.user.role === "ADMIN"
+        ? null
+        : req.user.id;
+
+      res.json(await taskService.getSummary(userId));
     },
     async getById(req, res) {
-      const task = await taskService.getTask(req.validated.params.id, req.user.id);
+      const userId = req.user.role === "ADMIN"
+        ? null
+        : req.user.id;
+      const task = await taskService.getTask(req.validated.params.id, userId);
       res.json(toTaskResponse(task));
     },
     async create(req, res) {
